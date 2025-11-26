@@ -1,4 +1,4 @@
-const { createCanvas } = require('canvas'); // Tambahkan modul canvas untuk membuat gambar
+const { createCanvas } = require('@napi-rs/canvas');
 
 // Fungsi untuk membuat teks dengan posisi acak
 function generateRandomPositionText(ctx, text, canvasWidth, canvasHeight) {
@@ -21,7 +21,7 @@ function generateRandomPositionText(ctx, text, canvasWidth, canvasHeight) {
 }
 
 // Fungsi untuk membuat gambar dengan teks acak dan kualitas rendah
-function generateLowQualityImage(text) {
+async function generateLowQualityImage(text) {
     const width = 500;
     const height = 500;
     const canvas = createCanvas(width, height);
@@ -46,7 +46,7 @@ function generateLowQualityImage(text) {
     tempCtx.drawImage(canvas, 0, 0, 200, 200);
     ctx.drawImage(tempCanvas, 0, 0, width, height);
 
-    return canvas.toBuffer();
+    return canvas.encode('png');
 }
 
 // Fungsi serverless untuk menangani permintaan
@@ -58,9 +58,9 @@ module.exports = async (req, res) => {
     }
 
     try {
-        const imageBuffer = generateLowQualityImage(text);
+        const imageBuffer = await generateLowQualityImage(text);
         res.setHeader('Content-Type', 'image/png');
-        res.send(imageBuffer); // Kirim gambar langsung ke browser
+        res.send(imageBuffer);
     } catch (error) {
         console.error('Gagal membuat gambar:', error.message);
         res.status(500).send('Gagal membuat gambar.');
