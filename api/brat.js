@@ -1,40 +1,6 @@
-const { createCanvas, GlobalFonts } = require('@napi-rs/canvas');
+const { createCanvas } = require('@napi-rs/canvas');
 
-// Register font atau gunakan font fallback
-try {
-    // Coba load font Arial, jika tidak tersedia gunakan font default
-    GlobalFonts.registerFromPath('/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf', 'Arial');
-} catch (error) {
-    console.log('Font Arial tidak tersedia, menggunakan font default');
-}
-
-// Fungsi untuk membuat teks dengan posisi acak
-function generateRandomPositionText(ctx, text, canvasWidth, canvasHeight) {
-    const words = text.split(" ");
-    const positions = [];
-
-    // Acak posisi untuk setiap kata
-    words.forEach((word) => {
-        let x, y;
-
-        // Pastikan posisi acak tidak terlalu dekat
-        do {
-            x = Math.random() * (canvasWidth - 100) + 50;
-            y = Math.random() * (canvasHeight - 100) + 50;
-        } while (positions.some((pos) => Math.hypot(pos.x - x, pos.y - y) < 50));
-
-        positions.push({ x, y });
-        
-        // Tambahkan stroke untuk membuat teks lebih jelas
-        ctx.strokeStyle = 'black';
-        ctx.lineWidth = 2;
-        ctx.strokeText(word, x, y);
-        ctx.fillStyle = 'black';
-        ctx.fillText(word, x, y);
-    });
-}
-
-// Fungsi untuk membuat gambar dengan teks acak dan kualitas rendah
+// Fungsi untuk membuat gambar dengan teks
 async function generateLowQualityImage(text) {
     const width = 500;
     const height = 500;
@@ -45,22 +11,46 @@ async function generateLowQualityImage(text) {
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, width, height);
 
-    // Pengaturan font dan warna teks - gunakan font yang tersedia
+    // Setup font - pakai font generic yang tersedia
     ctx.fillStyle = 'black';
-    ctx.font = 'bold 30px "Arial", "Helvetica", "Liberation Sans", "DejaVu Sans", sans-serif';
-    ctx.textBaseline = 'middle';
-    ctx.textAlign = 'center';
+    ctx.font = '30px sans-serif'; // Gunakan sans-serif generic
+    ctx.textBaseline = 'top'; // Ganti ke 'top' untuk alignment yang lebih predictable
+    ctx.textAlign = 'left';
 
-    // Tulis teks dengan posisi acak
-    generateRandomPositionText(ctx, text, width, height);
+    const words = text.split(" ");
+    const positions = [];
 
-    // Debug: cek apakah font tersedia
-    console.log('Available fonts:', GlobalFonts.families);
+    // Acak posisi untuk setiap kata
+    words.forEach((word) => {
+        let x, y;
+        const maxAttempts = 50;
+        let attempts = 0;
+
+        do {
+            x = Math.random() * (width - ctx.measureText(word).width - 20) + 10;
+            y = Math.random() * (height - 40) + 20;
+            attempts++;
+            
+            if (attempts > maxAttempts) break;
+        } while (positions.some((pos) => 
+            Math.abs(pos.x - x) < 100 && Math.abs(pos.y - y) < 40
+        ));
+
+        positions.push({ x, y });
+        
+        // Tambah stroke untuk visibility lebih baik
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 3;
+        ctx.strokeText(word, x, y);
+        
+        // Fill text
+        ctx.fillStyle = 'black';
+        ctx.fillText(word, x, y);
+    });
 
     return canvas.encode('png');
 }
 
-// Fungsi serverless untuk menangani permintaan
 module.exports = async (req, res) => {
     const text = req.query.text;
 
