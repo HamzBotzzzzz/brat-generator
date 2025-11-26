@@ -7,9 +7,9 @@
     "start": "vercel dev"
   },
   "dependencies": {
-    "canvas": "^2.8.0"
+    "@napi-rs/canvas": "^0.1.0"
   },
   "engines": {
-    "node": "24.x"
+    "node": "18.x"
   }
 }
